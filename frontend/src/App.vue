@@ -22,10 +22,13 @@
         :class="store.selectedDeviceIds.includes(d.id) ? 'ring-1 ring-orange-500' : ''">
         <div class="flex justify-between items-start">
           <div class="flex items-start gap-2">
-            <input type="checkbox" :checked="store.selectedDeviceIds.includes(d.id)"
-              @change="store.toggleDeviceSelection(d.id)"
-              class="mt-1 accent-orange-500" />
-            <div @click="store.selectedDevice = d">
+            <label class="flex items-start gap-2 cursor-pointer select-none mt-0.5">
+              <input type="checkbox" :checked="store.selectedDeviceIds.includes(d.id)"
+                @change="store.toggleDeviceSelection(d.id)"
+                @click.stop
+                class="mt-0.5 accent-orange-500" />
+            </label>
+            <div @click="store.selectedDevice = d" class="flex-1">
               <span>{{ d.name }}</span>
               <div class="text-xs text-gray-500">{{ d.ip }}:{{ d.port }} [{{ d.slaveId }}]</div>
             </div>

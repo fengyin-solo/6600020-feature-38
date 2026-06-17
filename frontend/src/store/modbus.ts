@@ -1,15 +1,28 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { Device, Alarm, ModbusRegister } from '../types'
+
+const STORAGE_KEY_SELECTED = 'modbus_selected_device_ids'
+const STORAGE_KEY_POLL = 'modbus_poll_interval'
+
+function loadFromStorage<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return fallback
+    return JSON.parse(raw) as T
+  } catch {
+    return fallback
+  }
+}
 
 export const useModbusStore = defineStore('modbus', () => {
   const devices = ref<Device[]>([])
   const alarms = ref<Alarm[]>([])
   const historyData = ref<Record<string, { time: number[]; values: number[] }>>({})
   const isPolling = ref(false)
-  const pollInterval = ref(1000)
+  const pollInterval = ref<number>(loadFromStorage(STORAGE_KEY_POLL, 1000))
   const selectedDevice = ref<Device | null>(null)
-  const selectedDeviceIds = ref<string[]>([])
+  const selectedDeviceIds = ref<string[]>(loadFromStorage(STORAGE_KEY_SELECTED, []))
 
   const criticalAlarms = computed(() => alarms.value.filter(a => a.level === 'critical' && !a.acknowledged))
   const onlineDevices = computed(() => devices.value.filter(d => d.online))
@@ -49,8 +62,19 @@ export const useModbusStore = defineStore('modbus', () => {
       },
     ]
     selectedDevice.value = devices.value[0]
-    selectedDeviceIds.value = [devices.value[0].id]
+    const validIds = selectedDeviceIds.value.filter(id => devices.value.some(d => d.id === id))
+    selectedDeviceIds.value = validIds.length ? validIds : [devices.value[0].id]
+    const firstSelected = devices.value.find(d => d.id === selectedDeviceIds.value[0])
+    if (firstSelected) selectedDevice.value = firstSelected
   }
+
+  watch(selectedDeviceIds, (val) => {
+    try { localStorage.setItem(STORAGE_KEY_SELECTED, JSON.stringify(val)) } catch {}
+  }, { deep: true })
+
+  watch(pollInterval, (val) => {
+    try { localStorage.setItem(STORAGE_KEY_POLL, JSON.stringify(val)) } catch {}
+  })
 
   function toggleDeviceSelection(deviceId: string) {
     const idx = selectedDeviceIds.value.indexOf(deviceId)
