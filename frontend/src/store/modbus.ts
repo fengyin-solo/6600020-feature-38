@@ -9,9 +9,11 @@ export const useModbusStore = defineStore('modbus', () => {
   const isPolling = ref(false)
   const pollInterval = ref(1000)
   const selectedDevice = ref<Device | null>(null)
+  const selectedDeviceIds = ref<string[]>([])
 
   const criticalAlarms = computed(() => alarms.value.filter(a => a.level === 'critical' && !a.acknowledged))
   const onlineDevices = computed(() => devices.value.filter(d => d.online))
+  const selectedDevices = computed(() => devices.value.filter(d => selectedDeviceIds.value.includes(d.id)))
 
   function initMockDevices() {
     devices.value = [
@@ -47,6 +49,18 @@ export const useModbusStore = defineStore('modbus', () => {
       },
     ]
     selectedDevice.value = devices.value[0]
+    selectedDeviceIds.value = [devices.value[0].id]
+  }
+
+  function toggleDeviceSelection(deviceId: string) {
+    const idx = selectedDeviceIds.value.indexOf(deviceId)
+    if (idx === -1) {
+      selectedDeviceIds.value.push(deviceId)
+    } else {
+      if (selectedDeviceIds.value.length > 1) {
+        selectedDeviceIds.value.splice(idx, 1)
+      }
+    }
   }
 
   function simulatePoll() {
@@ -91,8 +105,8 @@ export const useModbusStore = defineStore('modbus', () => {
   }
 
   return {
-    devices, alarms, historyData, isPolling, pollInterval, selectedDevice,
+    devices, alarms, historyData, isPolling, pollInterval, selectedDevice, selectedDeviceIds, selectedDevices,
     criticalAlarms, onlineDevices,
-    initMockDevices, simulatePoll, acknowledgeAlarm, toggleDevice
+    initMockDevices, simulatePoll, acknowledgeAlarm, toggleDevice, toggleDeviceSelection
   }
 })

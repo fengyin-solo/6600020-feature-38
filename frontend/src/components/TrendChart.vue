@@ -18,27 +18,32 @@ use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent
 const store = useModbusStore()
 
 const chartOption = computed<EChartsOption | null>(() => {
-  const dev = store.selectedDevice
-  if (!dev) return null
-  const colors = ['#f97316', '#22d3ee', '#a78bfa', '#34d399']
+  const selectedDevs = store.selectedDevices
+  if (!selectedDevs.length) return null
+  const colors = ['#f97316', '#22d3ee', '#a78bfa', '#34d399', '#f472b6', '#fbbf24', '#60a5fa', '#fb923c']
   const series: any[] = []
-  dev.registers.forEach((reg, i) => {
-    const key = `${dev.id}_${reg.address}`
-    const hd = store.historyData[key]
-    if (!hd || !hd.values.length) return
-    series.push({
-      name: reg.name,
-      type: 'line',
-      showSymbol: false,
-      smooth: true,
-      lineStyle: { color: colors[i % colors.length], width: 2 },
-      data: hd.time.map((t, j) => [t, hd.values[j]])
+  let colorIndex = 0
+  selectedDevs.forEach(dev => {
+    dev.registers.forEach(reg => {
+      const key = `${dev.id}_${reg.address}`
+      const hd = store.historyData[key]
+      if (!hd || !hd.values.length) return
+      const color = colors[colorIndex % colors.length]
+      colorIndex++
+      series.push({
+        name: `${dev.name} · ${reg.name}`,
+        type: 'line',
+        showSymbol: false,
+        smooth: true,
+        lineStyle: { color, width: 2 },
+        data: hd.time.map((t, j) => [t, hd.values[j]])
+      })
     })
   })
   if (!series.length) return null
   return {
     tooltip: { trigger: 'axis' },
-    legend: { textStyle: { color: '#999' }, top: 0 },
+    legend: { textStyle: { color: '#999' }, top: 0, type: 'scroll' },
     grid: { left: 50, right: 20, top: 30, bottom: 25 },
     xAxis: { type: 'value', axisLabel: { color: '#666', formatter: (v: number) => new Date(v).toLocaleTimeString() }, splitLine: { lineStyle: { color: '#1f2937' } } },
     yAxis: { type: 'value', axisLabel: { color: '#666' }, splitLine: { lineStyle: { color: '#1f2937' } } },
